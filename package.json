@@ -1,0 +1,12 @@
+{
+  "name": "m365-copilot-chat-api-prototype",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prototype single-page app to interact with the Microsoft 365 Copilot Chat API",
+  "type": "module",
+  "workspaces": ["frontend"],
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend"
+  }
+}
