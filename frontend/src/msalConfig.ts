@@ -29,5 +29,10 @@ export const loginRequest = {
   scopes:
     scopesFromEnv && scopesFromEnv.length > 0
       ? scopesFromEnv
-      : ['https://graph.microsoft.com/Chat.ReadWrite'],
+      : [
+          'openid',
+          'profile',
+          'offline_access',
+          'https://graph.microsoft.com/Chat.Read',
+        ],
 };
