@@ -18,31 +18,57 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const pca = new PublicClientApplication(msalConfig);
 
+const pcaReady: { promise: Promise<void> | null } = {
+  promise: null,
+};
+
+const ensurePcaInitialized = () => {
+  if (!pcaReady.promise) {
+    pcaReady.promise = pca.initialize();
+  }
+  return pcaReady.promise;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(true);
 
   useEffect(() => {
-    const accounts = pca.getAllAccounts();
-    if (accounts.length > 0) {
-      setAccount(accounts[0]);
-      pca.setActiveAccount(accounts[0]);
-    }
-    setIsAuthenticating(false);
+    let isMounted = true;
+    let callbackId: string | null = null;
 
-    const callbackId = pca.addEventCallback((event) => {
-      if (event.eventType === EventType.LOGIN_SUCCESS && event.payload?.account) {
-        const nextAccount = event.payload.account as AccountInfo;
-        setAccount(nextAccount);
-        pca.setActiveAccount(nextAccount);
-      }
-      if (event.eventType === EventType.LOGOUT_SUCCESS) {
-        setAccount(null);
-        pca.setActiveAccount(null);
-      }
-    });
+    ensurePcaInitialized()
+      .then(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const accounts = pca.getAllAccounts();
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          pca.setActiveAccount(accounts[0]);
+        }
+        setIsAuthenticating(false);
+
+        callbackId = pca.addEventCallback((event) => {
+          if (event.eventType === EventType.LOGIN_SUCCESS && event.payload?.account) {
+            const nextAccount = event.payload.account as AccountInfo;
+            setAccount(nextAccount);
+            pca.setActiveAccount(nextAccount);
+          }
+          if (event.eventType === EventType.LOGOUT_SUCCESS) {
+            setAccount(null);
+            pca.setActiveAccount(null);
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to initialize MSAL', error);
+        setIsAuthenticating(false);
+      });
 
     return () => {
+      isMounted = false;
       if (callbackId) {
         pca.removeEventCallback(callbackId);
       }
@@ -53,6 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     account,
     isAuthenticating,
     login: async () => {
+      await ensurePcaInitialized();
       setIsAuthenticating(true);
       try {
         await pca.loginPopup(loginRequest);
@@ -61,10 +88,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     logout: async () => {
+      await ensurePcaInitialized();
       const activeAccount = pca.getActiveAccount() ?? account;
       await pca.logoutPopup({ account: activeAccount ?? undefined });
     },
     acquireToken: async () => {
+      await ensurePcaInitialized();
       try {
         const result = await pca.acquireTokenSilent({
           account: pca.getActiveAccount() ?? account ?? undefined,
