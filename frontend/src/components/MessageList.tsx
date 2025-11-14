@@ -1,6 +1,7 @@
 import { Avatar, Caption1, Card, Text } from '@fluentui/react-components';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { ChatMessage } from '../hooks/useCopilotChat';
 
 interface MessageListProps {
@@ -43,6 +44,7 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => (
           <ReactMarkdown
             className="chat-message-markdown"
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
             components={{
               a: ({ node, ...anchorProps }) => (
                 <a {...anchorProps} target="_blank" rel="noreferrer" />

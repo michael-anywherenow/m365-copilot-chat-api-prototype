@@ -1,5 +1,5 @@
 import { ChangeEvent, KeyboardEvent, useState } from 'react';
-import { Button, Input } from '@fluentui/react-components';
+import { Button, Textarea } from '@fluentui/react-components';
 import { Send24Regular } from '@fluentui/react-icons';
 
 interface MessageInputProps {
@@ -18,11 +18,11 @@ export const MessageInput = ({ onSend, disabled = false }: MessageInputProps) =>
     setValue('');
   };
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setValue(event.target.value);
   };
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       void handleSubmit();
@@ -30,20 +30,22 @@ export const MessageInput = ({ onSend, disabled = false }: MessageInputProps) =>
   };
 
   return (
-    <Input
-      value={value}
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
-      placeholder="Ask Microsoft 365 Copilot…"
-      contentAfter={
-        <Button
-          appearance="primary"
-          icon={<Send24Regular />}
-          disabled={disabled || !value.trim()}
-          onClick={() => void handleSubmit()}
-        />
-      }
-      disabled={disabled}
-    />
+    <div className="message-input-container">
+      <Textarea
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder="Ask Microsoft 365 Copilot…"
+        rows={3}
+        resize="vertical"
+        disabled={disabled}
+      />
+      <Button
+        appearance="primary"
+        icon={<Send24Regular />}
+        disabled={disabled || !value.trim()}
+        onClick={() => void handleSubmit()}
+      />
+    </div>
   );
 };
