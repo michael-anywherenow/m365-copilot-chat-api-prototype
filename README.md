@@ -41,7 +41,7 @@ VITE_AZURE_AD_TENANT_ID=<your-tenant-id>
 VITE_AZURE_AD_CLIENT_ID=<your-spa-client-id>
 VITE_AZURE_AD_REDIRECT_URI=http://localhost:5173
 VITE_AZURE_AD_SCOPES=https://graph.microsoft.com/Chat.Read
-VITE_COPILOT_ENDPOINT=https://graph.microsoft.com/v1.0/copilot
+VITE_COPILOT_ENDPOINT=https://graph.microsoft.com/beta/copilot
 VITE_COPILOT_SUBSCRIPTION_KEY=
 ```
 
