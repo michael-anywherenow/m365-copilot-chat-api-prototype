@@ -1,4 +1,6 @@
 import { Avatar, Caption1, Card, Text } from '@fluentui/react-components';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ChatMessage } from '../hooks/useCopilotChat';
 
 interface MessageListProps {
@@ -37,7 +39,19 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => (
             <Caption1>{new Date(message.createdAt).toLocaleTimeString()}</Caption1>
           </div>
         </div>
-        <Text>{message.content}</Text>
+        <div className="chat-message-body">
+          <ReactMarkdown
+            className="chat-message-markdown"
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ node, ...anchorProps }) => (
+                <a {...anchorProps} target="_blank" rel="noreferrer" />
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
       </Card>
     ))}
     {isLoading ? (

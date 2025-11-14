@@ -18,11 +18,18 @@ export interface ChatMessage {
   copilotMessageId?: string;
 }
 
+interface CopilotConversationAttribution {
+  providerDisplayName?: string;
+  attributionSource?: string;
+  seeMoreWebUrl?: string;
+}
+
 interface CopilotConversationResponseMessage {
   id?: string;
   text?: string;
   createdDateTime?: string;
   content?: string | CopilotContentItem[];
+  attributions?: CopilotConversationAttribution[];
 }
 
 interface CopilotConversationResponse {
@@ -44,6 +51,74 @@ interface CopilotChatRequestBody {
     timeZone: string;
   };
 }
+
+const COPILOT_CITATION_REGEX = /\u{E200}[^\u{E200}\u{E201}]*\u{E201}/gu;
+const COPILOT_INLINE_TAG_REGEX = /<\/??[A-Z][A-Za-z0-9]*>/g;
+
+const sanitizeCopilotText = (input: string) => {
+  if (!input) {
+    return '';
+  }
+
+  let output = input.replace(/\r\n/g, '\n');
+  output = output.replace(COPILOT_CITATION_REGEX, '');
+  output = output.replace(/<br\s*\/?\s*>/gi, '\n');
+  output = output.replace(COPILOT_INLINE_TAG_REGEX, '');
+  output = output.replace(/[ \t]+\n/g, '\n');
+  output = output.replace(/\n{3,}/g, '\n\n');
+
+  return output.trim();
+};
+
+const buildSourcesAppendix = (attributions?: CopilotConversationAttribution[]) => {
+  if (!Array.isArray(attributions) || attributions.length === 0) {
+    return '';
+  }
+
+  const uniqueSources: CopilotConversationAttribution[] = [];
+  const seen = new Set<string>();
+
+  attributions.forEach((item) => {
+    const title = (item?.providerDisplayName ?? '').trim();
+    const link = (item?.seeMoreWebUrl ?? '').trim();
+    if (!title && !link) {
+      return;
+    }
+
+    const fingerprint = `${title.toLowerCase()}|${link.toLowerCase()}`;
+    if (seen.has(fingerprint)) {
+      return;
+    }
+    seen.add(fingerprint);
+    uniqueSources.push({ providerDisplayName: title, seeMoreWebUrl: link });
+  });
+
+  if (uniqueSources.length === 0) {
+    return '';
+  }
+
+  return uniqueSources
+    .map((source, index) => {
+      const title = source.providerDisplayName || `Source ${index + 1}`;
+      return source.seeMoreWebUrl
+        ? `${index + 1}. ${title} (${source.seeMoreWebUrl})`
+        : `${index + 1}. ${title}`;
+    })
+    .join('\n');
+};
+
+const formatCopilotResponseText = (
+  rawText: string,
+  attributions?: CopilotConversationAttribution[]
+) => {
+  const cleaned = sanitizeCopilotText(rawText);
+  if (!cleaned) {
+    return '';
+  }
+
+  const sourcesAppendix = buildSourcesAppendix(attributions);
+  return sourcesAppendix ? `${cleaned}\n\nSources:\n${sourcesAppendix}` : cleaned;
+};
 
 export const useCopilotChat = () => {
   const { acquireToken } = useAuth();
@@ -172,8 +247,8 @@ export const useCopilotChat = () => {
             continue;
           }
 
-          const normalizedContent = (() => {
-            if (typeof responseMessage?.text === 'string') {
+          const rawText = (() => {
+            if (typeof responseMessage?.text === 'string' && responseMessage.text.trim()) {
               return responseMessage.text;
             }
             if (typeof responseMessage?.content === 'string') {
@@ -186,7 +261,9 @@ export const useCopilotChat = () => {
                 .join('\n');
             }
             return '';
-          })().trim();
+          })();
+
+          const normalizedContent = formatCopilotResponseText(rawText, responseMessage?.attributions);
 
           processedResponseIds.current.add(responseId);
 

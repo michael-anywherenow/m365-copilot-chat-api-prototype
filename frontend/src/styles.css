@@ -78,6 +78,55 @@ body {
   align-items: center;
 }
 
+.chat-message-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-message-markdown {
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.chat-message-markdown p {
+  margin: 0 0 0.75rem;
+}
+
+.chat-message-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.chat-message-markdown h1,
+.chat-message-markdown h2,
+.chat-message-markdown h3,
+.chat-message-markdown h4,
+.chat-message-markdown h5,
+.chat-message-markdown h6 {
+  margin: 0.75rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.chat-message-markdown ul,
+.chat-message-markdown ol {
+  margin: 0 0 0.75rem 1.25rem;
+  padding: 0;
+}
+
+.chat-message-markdown li + li {
+  margin-top: 0.4rem;
+}
+
+.chat-message-markdown a {
+  color: #4247d6;
+  text-decoration: none;
+}
+
+.chat-message-markdown a:hover {
+  text-decoration: underline;
+}
+
 .chat-message-user {
   align-self: flex-end;
 }
