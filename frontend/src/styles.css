@@ -1,0 +1,93 @@
+:root {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  background-color: #f5f5f5;
+  color: #1b1b1f;
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+}
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  width: min(840px, 100%);
+  gap: 16px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-conversation-id {
+  color: #4f4f4f;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 8px;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-message-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.chat-message-user {
+  align-self: flex-end;
+}
+
+.chat-error {
+  color: #a4262c;
+}
+
+.chat-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
