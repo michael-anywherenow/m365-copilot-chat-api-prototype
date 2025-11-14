@@ -3,6 +3,13 @@ import { useAuth } from '../context/AuthProvider';
 
 type ChatRole = 'user' | 'assistant' | 'system';
 
+interface CopilotContentItem {
+  type: string;
+  text?: string;
+  value?: string;
+  content?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
@@ -12,14 +19,27 @@ export interface ChatMessage {
 
 interface CopilotResponseMessage {
   role: ChatRole;
-  content: string;
+  content: string | CopilotContentItem[];
+}
+
+interface CopilotResponseChoice {
+  message?: CopilotResponseMessage;
 }
 
 interface CopilotResponse {
   id?: string;
-  messages: CopilotResponseMessage[];
-  choices?: { message?: CopilotResponseMessage }[];
+  messages?: CopilotResponseMessage[];
+  choices?: CopilotResponseChoice[];
   conversationId?: string;
+}
+
+interface CopilotRequestMessage {
+  role: ChatRole;
+  content: CopilotContentItem[];
+}
+
+interface CopilotRequestBody {
+  messages: CopilotRequestMessage[];
 }
 
 export const useCopilotChat = () => {
@@ -48,9 +68,10 @@ export const useCopilotChat = () => {
       setError(null);
 
       try {
-        const copilotEndpoint =
+        const rawEndpoint =
           (import.meta.env.VITE_COPILOT_ENDPOINT as string | undefined)?.trim() ||
-          'https://graph.microsoft.com/v1.0/ai/copilot/chatCompletions';
+          'https://graph.microsoft.com/v1.0/copilot';
+        const copilotEndpoint = rawEndpoint.replace(/\/+$/, '');
         const subscriptionKey = (import.meta.env.VITE_COPILOT_SUBSCRIPTION_KEY as string | undefined)?.trim();
 
         const accessToken = await acquireToken();
@@ -58,20 +79,32 @@ export const useCopilotChat = () => {
           throw new Error('Failed to acquire access token.');
         }
 
-        const response = await fetch(copilotEndpoint, {
+        const requestMessage: CopilotRequestMessage = {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: content,
+            },
+          ],
+        };
+
+        const targetUrl = !conversationId
+          ? `${copilotEndpoint}/conversations`
+          : `${copilotEndpoint}/conversations/${conversationId}/chat`;
+
+        const requestBody: CopilotRequestBody = {
+          messages: [requestMessage],
+        };
+
+        const response = await fetch(targetUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${accessToken}`,
             ...(subscriptionKey ? { 'Ocp-Apim-Subscription-Key': subscriptionKey } : {}),
           },
-          body: JSON.stringify({
-            conversationId: conversationId ?? undefined,
-            messages: [...messages, userMessage].map((message) => ({
-              role: message.role,
-              content: message.content,
-            })),
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
@@ -88,27 +121,38 @@ export const useCopilotChat = () => {
         }
 
         const data: CopilotResponse = await response.json();
-        if (data.id) {
-          setConversationId(data.id);
-        }
-        if ((data as { conversationId?: string }).conversationId) {
-          setConversationId((data as { conversationId?: string }).conversationId ?? null);
+        const nextConversationId = data.id ?? data.conversationId ?? conversationId;
+        if (nextConversationId) {
+          setConversationId(nextConversationId);
         }
 
-        const copilotMessages: CopilotResponseMessage[] = Array.isArray(data.messages)
+        const responseMessages: CopilotResponseMessage[] | undefined = Array.isArray(data.messages)
           ? data.messages
-          : Array.isArray((data as { choices?: { message?: CopilotResponseMessage }[] }).choices)
-          ? ((data as { choices?: { message?: CopilotResponseMessage }[] }).choices ?? [])
-              .map((choice) => choice.message)
+          : Array.isArray(data.choices)
+          ? (data.choices ?? [])
+              .map((choice) => choice?.message)
               .filter((message): message is CopilotResponseMessage => Boolean(message))
-          : [];
+          : undefined;
 
-        const assistantMessages = copilotMessages.map((message, index) => ({
-          id: `${data.id ?? 'assistant'}-${index}-${Date.now()}`,
-          role: message.role,
-          content: message.content,
-          createdAt: new Date().toISOString(),
-        }));
+        if (!responseMessages || responseMessages.length === 0) {
+          return;
+        }
+
+        const assistantMessages = responseMessages.map((message, index) => {
+          const normalizedContent = Array.isArray(message.content)
+            ? message.content
+                .map((item) => item.text ?? item.value ?? item.content ?? '')
+                .filter(Boolean)
+                .join('\n')
+            : message.content;
+
+          return {
+            id: `${nextConversationId ?? 'assistant'}-${index}-${Date.now()}`,
+            role: message.role,
+            content: normalizedContent,
+            createdAt: new Date().toISOString(),
+          };
+        });
 
         setMessages((current) => [...current, ...assistantMessages]);
       } catch (err) {
@@ -119,7 +163,7 @@ export const useCopilotChat = () => {
         setIsSending(false);
       }
     },
-    [acquireToken, messages, conversationId]
+    [acquireToken, conversationId]
   );
 
   const resetConversation = useCallback(() => {

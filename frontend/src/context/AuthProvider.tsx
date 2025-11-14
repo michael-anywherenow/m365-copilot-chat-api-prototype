@@ -2,6 +2,7 @@ import {
   PublicClientApplication,
   EventType,
   AccountInfo,
+  AuthenticationResult,
 } from '@azure/msal-browser';
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { msalConfig, loginRequest } from '../msalConfig';
@@ -51,10 +52,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticating(false);
 
         callbackId = pca.addEventCallback((event) => {
-          if (event.eventType === EventType.LOGIN_SUCCESS && event.payload?.account) {
-            const nextAccount = event.payload.account as AccountInfo;
-            setAccount(nextAccount);
-            pca.setActiveAccount(nextAccount);
+          if (event.eventType === EventType.LOGIN_SUCCESS) {
+            const payload = event.payload as AuthenticationResult | undefined;
+            const nextAccount = payload?.account ?? null;
+            if (nextAccount) {
+              setAccount(nextAccount);
+              pca.setActiveAccount(nextAccount);
+            }
           }
           if (event.eventType === EventType.LOGOUT_SUCCESS) {
             setAccount(null);

@@ -41,12 +41,12 @@ VITE_AZURE_AD_TENANT_ID=<your-tenant-id>
 VITE_AZURE_AD_CLIENT_ID=<your-spa-client-id>
 VITE_AZURE_AD_REDIRECT_URI=http://localhost:5173
 VITE_AZURE_AD_SCOPES=https://graph.microsoft.com/Chat.Read
-VITE_COPILOT_ENDPOINT=https://graph.microsoft.com/v1.0/ai/copilot/chatCompletions
+VITE_COPILOT_ENDPOINT=https://graph.microsoft.com/v1.0/copilot
 VITE_COPILOT_SUBSCRIPTION_KEY=
 ```
 
 - `VITE_AZURE_AD_SCOPES` should include the delegated Graph permissions you consented to in Azure AD. Separate multiple scopes with commas. If you override the value, MSAL automatically adds the `openid` and `profile` scopes required for sign-in.
-- `VITE_COPILOT_ENDPOINT` is optional—omit or leave blank to use the Microsoft Graph default. Supply a tenant-specific endpoint if required.
+- `VITE_COPILOT_ENDPOINT` is optional—omit or leave blank to use the Microsoft Graph default. Supply a tenant-specific endpoint if required. The app automatically targets `/conversations` for the first request and `/conversations/{conversationId}/chat` for follow-up turns.
 - `VITE_COPILOT_SUBSCRIPTION_KEY` is optional and only necessary if your tenant requires the `Ocp-Apim-Subscription-Key` header for Copilot requests.
 
 ## Useful scripts
